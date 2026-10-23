@@ -11,6 +11,7 @@ import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.javaup.cache.OrderResultCache;
 import org.javaup.core.RedisKeyManage;
 import org.javaup.core.SpringUtil;
 import org.javaup.dto.CancelVoucherOrderDto;
@@ -123,6 +124,9 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
     
     @Resource
     private IVoucherReconcileLogService voucherReconcileLogService;
+
+    @Resource
+    private OrderResultCache orderResultCache;
     
 
     private static final DefaultRedisScript<Long> SECKILL_SCRIPT;
@@ -482,28 +486,19 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
         voucherOrder.setVoucherId(messageBody.getVoucherId());
         voucherOrder.setCreateTime(LocalDateTimeUtil.now());
         save(voucherOrder);
-        redisCache.set(RedisKeyBuild.createRedisKey(
-                RedisKeyManage.DB_SECKILL_ORDER_KEY,messageBody.getOrderId()),
-                voucherOrder,
-                60, 
-                TimeUnit.SECONDS
-        );
         voucherReconcileLogService.saveReconcileLog(
                 LogType.DEDUCT.getCode(),
                 BusinessType.SUCCESS.getCode(),
                 "order created",
                 message
         );
+        orderResultCache.publishAfterCommit(voucherOrder);
         return true;
     }
     
     @Override
     public Long getSeckillVoucherOrder(GetVoucherOrderDto getVoucherOrderDto) {
-        VoucherOrder voucherOrder = 
-                redisCache.get(RedisKeyBuild.createRedisKey(
-                        RedisKeyManage.DB_SECKILL_ORDER_KEY, 
-                        getVoucherOrderDto.getOrderId()), 
-                        VoucherOrder.class);
+        VoucherOrder voucherOrder = orderResultCache.get(getVoucherOrderDto.getOrderId());
         Long currentUserId = UserHolder.getUser().getId();
         if (Objects.nonNull(voucherOrder) && currentUserId.equals(voucherOrder.getUserId())) {
             return voucherOrder.getId();

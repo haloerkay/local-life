@@ -3,6 +3,7 @@ package org.javaup.controller;
 
 import jakarta.annotation.Resource;
 import jakarta.validation.Valid;
+import org.javaup.cache.VoucherDisplayQueryService;
 import org.javaup.dto.DelayVoucherReminderDto;
 import org.javaup.dto.GetSeckillVoucherDto;
 import org.javaup.dto.Result;
@@ -36,10 +37,13 @@ public class VoucherController {
     
     @Resource
     private ISeckillVoucherService seckillVoucherService;
+
+    @Resource
+    private VoucherDisplayQueryService displayQueryService;
     
     @PostMapping("/get")
     public Result<SeckillVoucherFullModel> get(@Valid @RequestBody GetSeckillVoucherDto getSeckillVoucherDto) {
-        return Result.ok(seckillVoucherService.queryByVoucherId(getSeckillVoucherDto.getVoucherId()));
+        return Result.ok(displayQueryService.query(getSeckillVoucherDto.getVoucherId()));
     }
     
     @PostMapping("/seckill")

@@ -19,6 +19,9 @@ public enum RedisKeyManage {
     SECKILL_USER_TAG_KEY("seckill:user:{%s}","秒杀券id（同槽位HashTag）","value为已下单用户集合","k"),
     
     SECKILL_VOUCHER_TAG_KEY("seckill:voucher:{%s}","秒杀券id（同槽位HashTag）","value为SeckillVoucher类型","k"),
+
+    VOUCHER_DISPLAY_TAG_KEY("voucher:display:{%s}","券展示信息","不参与库存及购买资格校验","k"),
+    VOUCHER_DISPLAY_NULL_TAG_KEY("voucher:display:null:{%s}","不存在的券","展示空值缓存","k"),
     
     SECKILL_VOUCHER_NULL_TAG_KEY("seckill:voucher_null:{%s}","秒杀券id（同槽位HashTag）","value为这是空值","k"),
     

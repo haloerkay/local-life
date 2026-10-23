@@ -1,0 +1,11 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="HMDP-压测-A-缓存命中加锁" type="JarApplication">
+    <option name="JAR_PATH" value="$PROJECT_DIR$/hmdp-core-service/target-loadtest-20261019-timeout/hmdp-core-service-0.0.1-SNAPSHOT.jar" />
+    <option name="VM_PARAMETERS" value="-Xms512m -Xmx2g -Dfile.encoding=UTF-8" />
+    <option name="PROGRAM_PARAMETERS" value="--spring.profiles.active=loadtest --server.port=8085 --loadtest.voucher-cache-mode=tiered --loadtest.voucher-read-path=locked --rate-limit.ip-max-attempts=100000 --rate-limit.user-max-attempts=100000 --mybatis-plus.configuration.log-impl=org.apache.ibatis.logging.nologging.NoLoggingImpl" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+    <option name="ALTERNATIVE_JRE_PATH" value="D:/environment/jdk17" />
+    <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="true" />
+    <method v="2" />
+  </configuration>
+</component>

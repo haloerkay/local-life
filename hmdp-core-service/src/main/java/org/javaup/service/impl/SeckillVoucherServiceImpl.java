@@ -7,19 +7,16 @@ import lombok.extern.slf4j.Slf4j;
 import org.javaup.cache.SeckillVoucherLocalCache;
 import org.javaup.core.RedisKeyManage;
 import org.javaup.entity.SeckillVoucher;
-import org.javaup.entity.Voucher;
 import org.javaup.handler.BloomFilterHandlerFactory;
 import org.javaup.mapper.SeckillVoucherMapper;
 import org.javaup.model.SeckillVoucherFullModel;
 import org.javaup.redis.RedisCache;
 import org.javaup.redis.RedisKeyBuild;
 import org.javaup.service.ISeckillVoucherService;
-import org.javaup.service.IVoucherService;
 import org.javaup.servicelock.LockType;
 import org.javaup.servicelock.annotion.ServiceLock;
 import org.javaup.util.ServiceLockTool;
 import org.redisson.api.RLock;
-import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -52,8 +49,7 @@ public class SeckillVoucherServiceImpl extends ServiceImpl<SeckillVoucherMapper,
     @Resource
     private SeckillVoucherMapper seckillVoucherMapper;
     
-    @Resource
-    private IVoucherService voucherService;
+
     
     @Override
     @ServiceLock(lockType= LockType.Read,name = UPDATE_SECKILL_VOUCHER_LOCK,keys = {"#voucherId"})
@@ -93,8 +89,8 @@ public class SeckillVoucherServiceImpl extends ServiceImpl<SeckillVoucherMapper,
             if (existResult){
                 throw new RuntimeException("查询优惠券不存在");
             }
-            SeckillVoucher seckillVoucher = lambdaQuery().eq(SeckillVoucher::getVoucherId,voucherId).one();
-            if (Objects.isNull(seckillVoucher)) {
+            seckillVoucherFullModel = loadVoucherFromDatabase(voucherId);
+            if (Objects.isNull(seckillVoucherFullModel)) {
                 redisCache.set(seckillVoucherNullRedisKey,
                         "这是一个空值",
                         CACHE_NULL_TTL,
@@ -102,15 +98,9 @@ public class SeckillVoucherServiceImpl extends ServiceImpl<SeckillVoucherMapper,
                 throw new RuntimeException("查询秒杀优惠券不存在");
             }
             long ttlSeconds = Math.max(
-                    LocalDateTimeUtil.between(LocalDateTimeUtil.now(), seckillVoucher.getEndTime()).getSeconds(),
+                    LocalDateTimeUtil.between(LocalDateTimeUtil.now(), seckillVoucherFullModel.getEndTime()).getSeconds(),
                     1L
             );
-            Voucher voucher = voucherService.lambdaQuery().eq(Voucher::getId, voucherId).one();
-            seckillVoucherFullModel = new SeckillVoucherFullModel();
-            BeanUtils.copyProperties(seckillVoucher, seckillVoucherFullModel);
-            seckillVoucherFullModel.setShopId(voucher.getShopId());
-            seckillVoucherFullModel.setStatus(voucher.getStatus());
-            seckillVoucherFullModel.setStock(null);
             redisCache.set(
                     seckillVoucherRedisKey,
                     seckillVoucherFullModel,
@@ -123,6 +113,11 @@ public class SeckillVoucherServiceImpl extends ServiceImpl<SeckillVoucherMapper,
             lock.unlock();
         }
     }
+
+    private SeckillVoucherFullModel loadVoucherFromDatabase(Long voucherId) {
+        return seckillVoucherMapper.selectFullModelByVoucherId(voucherId);
+    }
+
     
     @Override
     @ServiceLock(lockType= LockType.Read,name = UPDATE_SECKILL_VOUCHER_STOCK_LOCK,keys = {"#voucherId"})

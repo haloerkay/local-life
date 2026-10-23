@@ -4,6 +4,7 @@ import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.date.LocalDateTimeUtil;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.javaup.config.SeckillMessageTimingProperties;
 import org.javaup.core.RedisKeyManage;
 import org.javaup.entity.SeckillVoucher;
 import org.javaup.entity.VoucherOrder;
@@ -33,11 +34,13 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import static org.javaup.constant.DistributedLockConstants.UPDATE_SECKILL_VOUCHER_STOCK_LOCK;
-import static org.javaup.kafka.consumer.SeckillVoucherConsumer.MESSAGE_DELAY_TIME;
 
 @Service
 @Slf4j
 public class ReconciliationTaskServiceImpl implements IReconciliationTaskService {
+
+    @Resource
+    private SeckillMessageTimingProperties messageTiming;
     
     @Resource
     private ISeckillVoucherService seckillVoucherService;
@@ -166,7 +169,7 @@ public class ReconciliationTaskServiceImpl implements IReconciliationTaskService
                             .one();
             if (Objects.isNull(voucherReconcileLog)){
                 Long traceTs = redisTraceLogModel.getTs();
-                if (traceTs != null && now - traceTs < (MESSAGE_DELAY_TIME + 2000)) {
+                if (traceTs != null && now - traceTs < messageTiming.getReconciliationWaitMs()) {
                     continue;
                 }
                 log.error("发现Redis扣减流水存在，但DB订单不存在的情况，voucherId={}, orderId={}", voucherId, orderId);

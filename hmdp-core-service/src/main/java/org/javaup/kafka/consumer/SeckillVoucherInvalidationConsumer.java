@@ -3,13 +3,10 @@ package org.javaup.kafka.consumer;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
-import org.javaup.cache.SeckillVoucherLocalCache;
+import org.javaup.cache.SeckillVoucherCacheInvalidator;
 import org.javaup.consumer.AbstractConsumerHandler;
-import org.javaup.core.RedisKeyManage;
 import org.javaup.kafka.message.SeckillVoucherInvalidationMessage;
 import org.javaup.message.MessageExtend;
-import org.javaup.redis.RedisCache;
-import org.javaup.redis.RedisKeyBuild;
 import org.javaup.servicelock.LockType;
 import org.javaup.servicelock.annotion.ServiceLock;
 import org.springframework.aop.framework.AopContext;
@@ -33,14 +30,11 @@ public class SeckillVoucherInvalidationConsumer extends AbstractConsumerHandler<
 
 
     @Resource
-    private SeckillVoucherLocalCache seckillVoucherLocalCache;
+    private SeckillVoucherCacheInvalidator invalidator;
     
     @Resource
     private MeterRegistry meterRegistry;
 
-
-    @Resource
-    private RedisCache redisCache;
 
     public SeckillVoucherInvalidationConsumer() {
         super(SeckillVoucherInvalidationMessage.class);
@@ -74,14 +68,7 @@ public class SeckillVoucherInvalidationConsumer extends AbstractConsumerHandler<
     
     @ServiceLock(lockType= LockType.Write,name = UPDATE_SECKILL_VOUCHER_LOCK,keys = {"#voucherId"})
     public void delCache(Long voucherId){
-        RedisKeyBuild seckillVoucherRedisKey =
-                RedisKeyBuild.createRedisKey(RedisKeyManage.SECKILL_VOUCHER_TAG_KEY, voucherId);
-        seckillVoucherLocalCache.invalidate(seckillVoucherRedisKey.getRelKey());
-        
-        redisCache.del(RedisKeyBuild.createRedisKey(RedisKeyManage.SECKILL_VOUCHER_TAG_KEY, voucherId));
-        redisCache.del(RedisKeyBuild.createRedisKey(RedisKeyManage.SECKILL_STOCK_TAG_KEY, voucherId));
-        redisCache.del(RedisKeyBuild.createRedisKey(RedisKeyManage.SECKILL_VOUCHER_NULL_TAG_KEY, voucherId));
-        
+        invalidator.invalidate(voucherId);
     }
     
     @Override

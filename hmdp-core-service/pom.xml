@@ -14,6 +14,10 @@
 
     <name>hmdp-core-service</name>
     <description>黑马点评核心服务</description>
+    <properties>
+        <!-- Allows packaging a reviewable build without replacing a running Windows JAR. -->
+        <hmdp.build.directory>${project.basedir}/target</hmdp.build.directory>
+    </properties>
     <dependencies>
         <dependency>
             <groupId>org.apache.commons</groupId>
@@ -127,7 +131,13 @@
         </dependency>
     </dependencies>
     <build>
+        <directory>${hmdp.build.directory}</directory>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.5.4</version>
+            </plugin>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>

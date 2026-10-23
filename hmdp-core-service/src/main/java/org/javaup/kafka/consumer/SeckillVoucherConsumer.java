@@ -2,6 +2,7 @@ package org.javaup.kafka.consumer;
 
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.javaup.config.SeckillMessageTimingProperties;
 import org.javaup.consumer.AbstractConsumerHandler;
 import org.javaup.core.RedisKeyManage;
 import org.javaup.enums.BaseCode;
@@ -46,7 +47,8 @@ import static org.javaup.constant.Constant.SPRING_INJECT_PREFIX_DISTINCTION_NAME
 @Component
 public class SeckillVoucherConsumer extends AbstractConsumerHandler<SeckillVoucherMessage> {
     
-    public static Long MESSAGE_DELAY_TIME = 10000L;
+    @Resource
+    private SeckillMessageTimingProperties messageTiming;
     
     @Resource
     private IVoucherOrderService voucherOrderService;
@@ -130,8 +132,8 @@ public class SeckillVoucherConsumer extends AbstractConsumerHandler<SeckillVouch
     protected Boolean beforeConsume(MessageExtend<SeckillVoucherMessage> message) {
         long producerTimeTimestamp = message.getProducerTime().getTime();
         long delayTime = System.currentTimeMillis() - producerTimeTimestamp;
-        //如果消息超时时间达到了阈值（10秒）
-        if (delayTime > MESSAGE_DELAY_TIME){
+        // Message-age threshold and reconciliation grace share one configuration.
+        if (delayTime > messageTiming.getMaxAgeMs()){
             log.info("消费到kafka的创建优惠券消息延迟时间大于了 {} 毫秒 此订单消息被丢弃 订单号 : {}",
                     delayTime,message.getMessageBody().getOrderId());
             long traceId = snowflakeIdGenerator.nextId();
